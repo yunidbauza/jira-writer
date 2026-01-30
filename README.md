@@ -6,15 +6,20 @@ Claude Code plugin for creating and updating Jira Cloud tickets with rich conten
 
 ### From GitHub
 
+First, add the repository as a marketplace:
 ```bash
-/plugin install github:yunidbauza/jira-writer
+/plugin marketplace add yunidbauza/jira-writer
+```
+
+Then install the plugin:
+```bash
+/plugin install jira-writer
 ```
 
 ### Manual Installation
 
 ```bash
-git clone https://github.com/yunidbauza/jira-writer.git
-cp -r jira-writer ~/.claude/plugins/
+git clone https://github.com/yunidbauza/jira-writer.git ~/.claude/plugins/jira-writer
 chmod +x ~/.claude/plugins/jira-writer/scripts/*.sh
 ```
 

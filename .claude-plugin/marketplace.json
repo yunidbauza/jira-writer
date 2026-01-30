@@ -1,0 +1,15 @@
+{
+  "name": "jira-writer-marketplace",
+  "description": "Marketplace for Jira Writer plugin",
+  "plugins": [
+    {
+      "name": "jira-writer",
+      "description": "Create and update Jira Cloud tickets with rich content, including automatic Mermaid diagram embedding",
+      "version": "1.0.0",
+      "source": {
+        "source": "github",
+        "repo": "yunidbauza/jira-writer"
+      }
+    }
+  ]
+}

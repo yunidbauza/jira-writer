@@ -309,7 +309,7 @@ jira_search_jql() {
     local encoded_jql
     encoded_jql=$(echo -n "$jql" | jq -sRr @uri)
 
-    local endpoint="/rest/api/3/search?jql=$encoded_jql&maxResults=$max_results&fields=$fields"
+    local endpoint="/rest/api/3/search/jql?jql=$encoded_jql&maxResults=$max_results&fields=$fields"
 
     local response
     response=$(_jira_get "$endpoint")

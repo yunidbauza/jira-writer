@@ -111,6 +111,7 @@ op_create_issue() {
     local description="${4:-}"
 
     # Build the issue data
+    # Note: Jira API v3 requires description in ADF format
     local issue_data
     if [[ -n "$description" ]]; then
         issue_data=$(jq -n \
@@ -123,7 +124,17 @@ op_create_issue() {
                     "project": {"key": $project},
                     "issuetype": {"name": $type},
                     "summary": $summary,
-                    "description": $desc
+                    "description": {
+                        "type": "doc",
+                        "version": 1,
+                        "content": [{
+                            "type": "paragraph",
+                            "content": [{
+                                "type": "text",
+                                "text": $desc
+                            }]
+                        }]
+                    }
                 }
             }')
     else

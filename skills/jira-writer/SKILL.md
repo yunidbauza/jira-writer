@@ -36,53 +36,30 @@ This skill activates contextually when:
 
 Before executing Jira operations, verify these dependencies:
 
-### Required: Atlassian MCP
+### API Selection: REST API Primary, MCP Fallback
 
-The Atlassian MCP provides Jira API access for CRUD operations.
+This skill uses a **hybrid approach** with REST API as the primary method:
 
-**Check:** Attempt to use any `mcp__atlassian__*` tool.
-
-**If unavailable:**
-```
-The Atlassian MCP is not configured. To set it up:
-1. Install the MCP from the Atlassian marketplace
-2. Configure authentication in your Claude Code MCP settings
-3. Restart Claude Code
-
-Without Atlassian MCP, this skill cannot function.
-```
-
-### API Selection: MCP vs REST API
-
-Use a **hybrid approach** based on content complexity:
-
-| Content Type | API to Use | Reason |
-|--------------|------------|--------|
-| Headings, paragraphs, text | MCP | Markdown-to-ADF conversion works |
-| Bullet lists, numbered lists | MCP | Properly converted |
-| Tables | MCP | Properly converted |
-| Code blocks | MCP | Properly converted |
-| Bold, italic, links | MCP | Properly converted |
-| **Checkboxes** (`- [ ]`, `- [x]`) | **REST API** | MCP converts to escaped text, not interactive taskList |
-| **Images/Mermaid diagrams** | **REST API** | MCP cannot handle mediaSingle nodes |
-| **External media** | **REST API** | MCP cannot embed media |
+| Priority | Method | When Used |
+|----------|--------|-----------|
+| **1st** | REST API | Always tried first (requires `JIRA_DOMAIN` + `JIRA_API_KEY`) |
+| **2nd** | Atlassian MCP | Fallback when REST fails or isn't configured |
 
 **Decision logic:**
 ```
-SCAN content for:
-  - Checkbox patterns: `- [ ]` or `- [x]` or `* [ ]` or `* [x]`
-  - Mermaid blocks: ```mermaid
-  - Image references or embedded media
-
-IF any complex content found:
-    USE REST API for description update
+IF JIRA_DOMAIN and JIRA_API_KEY configured:
+    TRY REST API first
+    IF REST fails:
+        FALL BACK to MCP (if available)
 ELSE:
-    USE MCP (simpler, faster)
+    USE MCP directly (if available)
+    IF MCP unavailable:
+        REPORT error with setup instructions
 ```
 
-### Required for Diagrams: JIRA_API_KEY
+### Required for REST API (Primary): JIRA_API_KEY
 
-Image attachments require REST API access (MCP cannot upload attachments).
+REST API is the recommended primary method for all operations.
 
 **Check:** Verify environment variable `JIRA_API_KEY` exists.
 
@@ -92,22 +69,64 @@ Image attachments require REST API access (MCP cannot upload attachments).
 
 **IMPORTANT:** Store the raw `email:api_token` string. The upload scripts handle base64 encoding internally.
 
-**If missing:**
-```
-JIRA_API_KEY environment variable not found.
-
-Diagram embedding requires REST API access. To configure:
-1. Generate an API token at https://id.atlassian.com/manage-profile/security/api-tokens
-2. Set environment variable: export JIRA_API_KEY="your-email@domain.com:your_api_token"
-
-Proceeding without diagram support. Mermaid blocks will be skipped.
-```
-
-### Required for Diagrams: JIRA_DOMAIN
+### Required for REST API (Primary): JIRA_DOMAIN
 
 **Check:** Verify environment variable `JIRA_DOMAIN` exists (e.g., `company.atlassian.net`).
 
 **If missing:** Ask user to provide their Jira domain.
+
+### Optional Fallback: Atlassian MCP
+
+The Atlassian MCP provides Jira API access as a fallback when REST API is unavailable.
+
+**Check:** Attempt to use any `mcp__atlassian__*` tool.
+
+**If unavailable and REST also unavailable:**
+```
+Neither REST API nor Atlassian MCP is configured.
+
+For REST API (recommended):
+1. Generate an API token at https://id.atlassian.com/manage-profile/security/api-tokens
+2. Set environment variables:
+   export JIRA_DOMAIN="company.atlassian.net"
+   export JIRA_API_KEY="your-email@domain.com:your_api_token"
+
+For MCP fallback:
+1. Install the MCP from the Atlassian marketplace
+2. Configure authentication in your Claude Code MCP settings
+3. Restart Claude Code
+```
+
+### Content Type and API Selection
+
+Use a **content-based approach** for API selection:
+
+| Content Type | API to Use | Reason |
+|--------------|------------|--------|
+| Headings, paragraphs, text | REST or MCP | Both work |
+| Bullet lists, numbered lists | REST or MCP | Both work |
+| Tables | REST or MCP | Both work |
+| Code blocks | REST or MCP | Both work |
+| Bold, italic, links | REST or MCP | Both work |
+| **Checkboxes** (`- [ ]`, `- [x]`) | **REST API** | MCP converts to escaped text, not interactive taskList |
+| **Images/Mermaid diagrams** | **REST API** | MCP cannot handle mediaSingle nodes |
+| **External media** | **REST API** | MCP cannot embed media |
+| **Attachments** | **REST API only** | MCP cannot upload files |
+
+**Decision logic:**
+```
+SCAN content for:
+  - Checkbox patterns: `- [ ]` or `- [x]` or `* [ ]` or `* [x]`
+  - Mermaid blocks: ```mermaid
+  - Image references or embedded media
+  - Attachments to upload
+
+IF any complex content found:
+    USE REST API (required, no fallback)
+ELSE:
+    USE REST API first
+    IF REST fails: FALL BACK to MCP
+```
 
 ### Required for Diagrams: mermaid-cli
 
@@ -133,19 +152,38 @@ Run: npm install -g @mermaid-js/mermaid-cli
 
 | Missing | Behavior |
 |---------|----------|
-| Atlassian MCP | Skill cannot function; stop with setup instructions |
-| JIRA_API_KEY | Text operations work; diagrams skipped with warning |
-| JIRA_DOMAIN | Ask user to provide it |
+| REST API credentials | Fall back to MCP; if MCP unavailable, stop with setup instructions |
+| MCP | REST API handles everything (no impact if REST configured) |
+| Both REST and MCP | Skill cannot function; stop with setup instructions |
+| JIRA_API_KEY only | Text operations via MCP; diagrams/checkboxes skipped with warning |
 | mmdc | Diagrams skipped with warning; offer installation |
 
 ### Helper Scripts
 
-The following scripts automate diagram processing (located in `scripts/` directory):
+The following scripts automate operations (located in `scripts/` directory):
+
+**test-jira-connection.sh**
+```bash
+./scripts/test-jira-connection.sh
+# Tests API connectivity and returns recommendation
+```
 
 **check-prerequisites.sh**
 ```bash
 ./scripts/check-prerequisites.sh
 # Returns JSON with status of all dependencies
+```
+
+**jira-api-wrapper.sh**
+```bash
+./scripts/jira-api-wrapper.sh <operation> [args...]
+# Unified interface - tries REST first, signals MCP fallback if needed
+```
+
+**jira-rest-api.sh**
+```bash
+./scripts/jira-rest-api.sh <function> [args...]
+# Direct REST API functions (can be sourced or run standalone)
 ```
 
 **jira-mermaid-upload.sh**
@@ -168,8 +206,9 @@ When creating new issues:
 - **User-specified:** Use whatever type the user indicates (Story, Bug, Spike, Epic, Subtask, etc.)
 
 Check available issue types for a project:
-```
-Use mcp__atlassian__getJiraProjectIssueTypesMetadata with projectIdOrKey
+```bash
+./scripts/jira-api-wrapper.sh get_issue_types PROJECT_KEY
+# Or via MCP: mcp__atlassian__getJiraProjectIssueTypesMetadata with projectIdOrKey
 ```
 
 ## Workflow
@@ -229,7 +268,9 @@ For each mermaid block:
         REPORT conversion error
         SKIP this diagram
 
-4d. UPLOAD attachment
+4d. UPLOAD attachment (REST API required)
+    Use: ./scripts/jira-api-wrapper.sh upload_attachment $ISSUE_KEY $TEMP_DIR/diagram-N.png
+    Or directly:
     POST to: https://$JIRA_DOMAIN/rest/api/3/issue/$ISSUE_KEY/attachments
     Headers:
         Authorization: Basic $JIRA_API_KEY
@@ -259,9 +300,12 @@ has_images = content contains image references
 requires_rest_api = has_checkboxes OR has_mermaid OR has_images
 
 IF requires_rest_api:
+    USE REST API only (no MCP fallback for complex content)
     PROCEED to Step 5a (Build full ADF manually)
 ELSE:
-    PROCEED to Step 6 (MCP can handle simple content)
+    TRY REST API first
+    IF REST fails: FALL BACK to MCP
+    PROCEED to Step 6
 ```
 
 ### Step 5a: Build ADF Document (for complex content)
@@ -303,39 +347,47 @@ FOR each mermaid block position:
 
 Choose API based on content complexity (determined in Step 5):
 
-#### Path A: Simple Content (use MCP)
+#### Path A: Simple Content (REST with MCP fallback)
 
 **For new issues:**
+```bash
+# Try REST API first
+./scripts/jira-api-wrapper.sh create_issue PROJECT_KEY "Task" "Summary" "Description"
+
+# If response indicates MCP fallback needed:
+# Use mcp__atlassian__createJiraIssue with:
+#     - projectKey
+#     - issueTypeName (default: "Task" if not specified by user)
+#     - summary
+#     - description (markdown - MCP converts to ADF)
 ```
-Use mcp__atlassian__createJiraIssue with:
-    - projectKey
-    - issueTypeName (default: "Task" if not specified by user)
-    - summary
-    - description (markdown - MCP converts to ADF)
 
 Issue type mapping:
-    - "task" or unspecified -> "Task"
-    - "story" or "user story" -> "Story"
-    - "bug" or "defect" -> "Bug"
-    - "spike" -> "Spike"
-    - "epic" -> "Epic"
-    - "subtask" or "sub-task" -> "Subtask"
-```
+- "task" or unspecified -> "Task"
+- "story" or "user story" -> "Story"
+- "bug" or "defect" -> "Bug"
+- "spike" -> "Spike"
+- "epic" -> "Epic"
+- "subtask" or "sub-task" -> "Subtask"
 
 **For existing issues:**
-```
-Use mcp__atlassian__editJiraIssue with:
-    - description (markdown - MCP converts to ADF)
+```bash
+# Try REST API first
+./scripts/jira-api-wrapper.sh update_issue PROJ-123 '{"description": "..."}'
+
+# If response indicates MCP fallback needed:
+# Use mcp__atlassian__editJiraIssue with:
+#     - description (markdown - MCP converts to ADF)
 ```
 
-#### Path B: Complex Content (use REST API)
+#### Path B: Complex Content (REST API only)
 
 Content with checkboxes, images, or mermaid diagrams requires REST API.
 
 **For new issues:**
 ```
-1. CREATE issue via MCP (without description):
-   mcp__atlassian__createJiraIssue with summary only
+1. CREATE issue via REST API (or MCP if REST unavailable) with summary only:
+   ./scripts/jira-api-wrapper.sh create_issue PROJECT_KEY "Task" "Summary"
 
 2. UPDATE description via REST API:
    curl -X PUT \
@@ -350,7 +402,7 @@ Content with checkboxes, images, or mermaid diagrams requires REST API.
 DETERMINE update mode from user request:
 
 DEFAULT (append):
-    FETCH current description via mcp__atlassian__getJiraIssue
+    FETCH current description via REST API or MCP
     PARSE existing ADF content
     APPEND new ADF nodes to existing content array
     UPDATE via REST API (PUT /rest/api/3/issue/<key>)
@@ -652,8 +704,8 @@ How to handle errors at each stage.
 
 | Stage | Error | Action |
 |-------|-------|--------|
-| Prerequisites | MCP unavailable | STOP; provide setup instructions |
-| Prerequisites | JIRA_API_KEY missing | WARN; proceed without diagrams |
+| Prerequisites | REST unavailable, MCP unavailable | STOP; provide setup instructions |
+| Prerequisites | REST auth failed | WARN; try MCP fallback |
 | Prerequisites | JIRA_DOMAIN missing | ASK user to provide |
 | Prerequisites | mmdc missing | OFFER install; if declined, skip diagrams |
 | Mermaid validation | Syntax error | REPORT details; skip diagram, continue others |
@@ -661,7 +713,7 @@ How to handle errors at each stage.
 | Attachment upload | 401/403 | STOP; report auth error, check API key |
 | Attachment upload | 404 | STOP; issue doesn't exist |
 | Attachment upload | Other error | RETRY once; if fails, skip with warning |
-| Description update | MCP error | ROLLBACK attachments; report error |
+| Description update | REST error | TRY MCP fallback (for simple content); ROLLBACK attachments; report error |
 | Section detection | Section not found | ASK user for clarification |
 
 ### Rollback Procedure
@@ -742,6 +794,11 @@ Always provide actionable information:
 - Verify JIRA_DOMAIN matches your instance exactly
 - Verify API token has correct permissions
 
+**8. REST API vs MCP fallback**
+- REST API is preferred (faster, more reliable, full feature support)
+- MCP fallback is automatic for simple content when REST is unavailable
+- Complex content (checkboxes, diagrams, attachments) has no MCP fallback
+
 ## Examples
 
 Common usage patterns for this skill.
@@ -753,9 +810,9 @@ Common usage patterns for this skill.
 
 **Skill execution:**
 1. Create mermaid sequence diagram for OAuth flow
-2. Convert to PNG, upload as attachment
+2. Convert to PNG, upload as attachment (REST API)
 3. Build ADF with description and embedded diagram
-4. Create issue via `mcp__atlassian__createJiraIssue`
+4. Create issue via REST API (or MCP for summary, then REST for description)
 
 ---
 
@@ -767,10 +824,10 @@ Common usage patterns for this skill.
 **Skill execution:**
 1. Read `feature-spec.md`
 2. Scan for mermaid blocks (if any)
-3. Convert diagrams, upload attachments
+3. Convert diagrams, upload attachments (REST API)
 4. Build ADF from markdown
 5. Fetch existing description, append new content
-6. Update via `mcp__atlassian__editJiraIssue`
+6. Update via REST API (or MCP if no complex content)
 
 ---
 
@@ -782,10 +839,10 @@ Common usage patterns for this skill.
 **Skill execution:**
 1. Identify current ticket from conversation context
 2. Generate ER diagram mermaid code
-3. Convert to PNG, upload
+3. Convert to PNG, upload (REST API)
 4. Fetch existing description
 5. Append mediaSingle node with diagram
-6. Update issue
+6. Update issue (REST API required)
 
 ---
 
@@ -811,7 +868,7 @@ Common usage patterns for this skill.
 2. Parse to find "Technical Overview" heading
 3. Generate and convert diagram
 4. Insert mediaSingle node after that section
-5. Update with modified ADF
+5. Update with modified ADF (REST API required)
 
 ---
 
@@ -824,8 +881,8 @@ Common usage patterns for this skill.
 > - [x] Remember me checkbox works"
 
 **Skill execution:**
-1. Detect checkbox patterns (`- [ ]`, `- [x]`) → requires REST API
-2. Create issue via MCP (summary only)
+1. Detect checkbox patterns (`- [ ]`, `- [x]`) -> requires REST API
+2. Create issue via REST API (or MCP for summary only)
 3. Build ADF with taskList:
    ```json
    {
@@ -842,14 +899,18 @@ Common usage patterns for this skill.
 
 ---
 
-### Example 7: Simple Text-Only Ticket (MCP Path)
+### Example 7: Simple Text-Only Ticket (REST with MCP Fallback)
 
 **User request:**
 > "Create a ticket to refactor the database connection pool"
 
 **Skill execution:**
-1. No complex content detected → use MCP
-2. Create issue via `mcp__atlassian__createJiraIssue` with:
+1. No complex content detected -> REST API with MCP fallback available
+2. Try REST API first:
+   ```bash
+   ./scripts/jira-api-wrapper.sh create_issue PROJECT "Task" "Refactor database connection pool" "Description..."
+   ```
+3. If REST fails, fall back to `mcp__atlassian__createJiraIssue` with:
    - projectKey
    - issueTypeName: "Task"
    - summary: "Refactor database connection pool"

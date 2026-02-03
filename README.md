@@ -27,21 +27,38 @@ chmod +x ~/.claude/plugins/jira-writer/scripts/*.sh
 
 | Dependency | Purpose | Required |
 |------------|---------|----------|
-| **Atlassian MCP** | Jira API access | Yes |
-| `JIRA_DOMAIN` | Your Jira Cloud domain | For diagrams/checkboxes |
-| `JIRA_API_KEY` | REST API auth (`email:token`) | For diagrams/checkboxes |
-| `mmdc` | Mermaid CLI | For diagrams only |
+| `JIRA_DOMAIN` | Your Jira Cloud domain | Yes |
+| `JIRA_API_KEY` | REST API auth (`email:token`) | Yes |
+| Atlassian MCP | Fallback when REST fails | No (optional) |
+| `mmdc` | Mermaid CLI for diagrams | For diagrams only |
 
 ## Environment Setup
 
 ```bash
+# Required for REST API (primary method)
 export JIRA_DOMAIN="company.atlassian.net"
 export JIRA_API_KEY="your-email@company.com:your-api-token"
-npm install -g @mermaid-js/mermaid-cli  # optional, for diagrams
+
+# Optional: for Mermaid diagrams
+npm install -g @mermaid-js/mermaid-cli
 ```
 
-Verify setup:
+### Getting Your API Token
+
+1. Go to https://id.atlassian.com/manage-profile/security/api-tokens
+2. Click "Create API token"
+3. Give it a label and copy the token
+4. Set `JIRA_API_KEY` as `your-email@company.com:your-token`
+
+**Important:** Store the raw `email:token` format. The scripts handle base64 encoding internally.
+
+### Verify Setup
+
 ```bash
+# Test connection
+~/.claude/plugins/jira-writer/scripts/test-jira-connection.sh
+
+# Check all prerequisites
 ~/.claude/plugins/jira-writer/scripts/check-prerequisites.sh
 ```
 
@@ -52,6 +69,7 @@ Verify setup:
 - **Interactive Checkboxes** - `- [ ]` and `- [x]` as clickable task lists
 - **Mermaid Diagrams** - Auto-convert and embed as images
 - **Markdown Import** - Use .md files as ticket content
+- **Automatic Fallback** - Uses MCP if REST API is unavailable
 
 ### Supported Diagram Types (11)
 
@@ -85,21 +103,98 @@ The skill activates contextually when you:
 
 ## How It Works
 
-The skill automatically selects the best API based on content:
+The plugin uses **REST API as the primary method** with MCP as a fallback:
 
-| Content | API | Reason |
-|---------|-----|--------|
-| Text, lists, code | MCP | Simple conversion |
-| Checkboxes (`- [ ]`) | REST | MCP can't create interactive taskLists |
-| Mermaid diagrams | REST | Requires attachment upload |
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     Jira Writer Skill                        │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│   ┌─────────────────────────────────────────────────────┐   │
+│   │               jira-api-wrapper.sh                    │   │
+│   │  (Unified interface - tries REST first, MCP fallback)│   │
+│   └─────────────────────────────────────────────────────┘   │
+│                            │                                │
+│              ┌─────────────┴─────────────┐                  │
+│              ▼                           ▼                  │
+│   ┌──────────────────┐       ┌──────────────────┐          │
+│   │   REST API        │       │   MCP Fallback   │          │
+│   │   (Primary)       │       │   (Secondary)    │          │
+│   │                   │       │                   │          │
+│   │ jira-rest-api.sh  │       │ Atlassian MCP    │          │
+│   └──────────────────┘       └──────────────────┘          │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### API Selection by Content Type
+
+| Content | API Used | Fallback |
+|---------|----------|----------|
+| Text, lists, code | REST (primary) | MCP |
+| Checkboxes (`- [ ]`) | REST only | None |
+| Mermaid diagrams | REST only | None |
+| Attachments | REST only | None |
 
 ## Scripts
 
 | Script | Purpose |
 |--------|---------|
+| `test-jira-connection.sh` | Test API connectivity and auth |
 | `check-prerequisites.sh` | Verify all dependencies |
+| `jira-api-wrapper.sh` | Unified interface (REST + MCP fallback) |
+| `jira-rest-api.sh` | Core REST API functions |
 | `jira-mermaid-upload.sh` | Upload single diagram |
 | `jira-mermaid-batch-upload.sh` | Upload multiple diagrams |
+
+### Script Usage Examples
+
+```bash
+# Test your connection
+./scripts/test-jira-connection.sh
+
+# Check prerequisites
+./scripts/check-prerequisites.sh
+
+# Get an issue via wrapper (REST first, MCP fallback)
+./scripts/jira-api-wrapper.sh get_issue PROJ-123
+
+# Create an issue
+./scripts/jira-api-wrapper.sh create_issue PROJECT "Task" "Summary" "Description"
+
+# Direct REST API call
+./scripts/jira-rest-api.sh jira_get_issue PROJ-123
+
+# Upload a diagram
+./scripts/jira-mermaid-upload.sh PROJ-123 diagram.mmd
+```
+
+## Troubleshooting
+
+### REST API Connection Issues
+
+**401 Unauthorized**
+- Verify `JIRA_API_KEY` format is `email:token` (not base64 encoded)
+- Regenerate API token at https://id.atlassian.com/manage-profile/security/api-tokens
+
+**404 Not Found**
+- Check `JIRA_DOMAIN` is correct (e.g., `company.atlassian.net`)
+- Verify the issue key exists and you have access
+
+**Connection Failed**
+- Check network connectivity
+- Verify domain is reachable: `curl -I https://your-domain.atlassian.net`
+
+### MCP Fallback Not Working
+
+- MCP is optional; the plugin works fully with just REST API
+- If you want MCP fallback, configure it in Claude Code MCP settings
+
+### Diagram Upload Fails
+
+- Ensure `mmdc` is installed: `npm install -g @mermaid-js/mermaid-cli`
+- Diagrams require REST API (no MCP fallback)
+- Check diagram syntax by running: `mmdc -i diagram.mmd -o test.png`
 
 ## Resources
 

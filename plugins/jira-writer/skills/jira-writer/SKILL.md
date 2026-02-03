@@ -162,6 +162,57 @@ Run: npm install -g @mermaid-js/mermaid-cli
 
 The following scripts automate operations (located in `scripts/` directory):
 
+#### Script Selection Guide
+
+| Script | Purpose | Input Format |
+|--------|---------|--------------|
+| `jira-api-wrapper.sh` | **PRIMARY interface** - use this for all operations | Positional arguments |
+| `jira-rest-api.sh` | Low-level API access (advanced use only) | Raw JSON |
+
+**IMPORTANT:** Always use `jira-api-wrapper.sh` for Jira operations. It accepts user-friendly positional arguments and handles JSON construction internally. Only use `jira-rest-api.sh` directly when you need to pass custom raw JSON payloads.
+
+#### Primary Scripts
+
+**jira-api-wrapper.sh** (USE THIS)
+```bash
+# Create issue - accepts positional args
+./scripts/jira-api-wrapper.sh create_issue PROJECT_KEY TYPE "Summary" "Description"
+./scripts/jira-api-wrapper.sh create_issue PROJ Task "Fix login bug" "Users cannot login"
+
+# Update issue
+./scripts/jira-api-wrapper.sh update_issue PROJ-123 '{"fields":{"summary":"New title"}}'
+
+# Get issue
+./scripts/jira-api-wrapper.sh get_issue PROJ-123
+
+# Search with JQL
+./scripts/jira-api-wrapper.sh search_jql "project = PROJ AND status = Open"
+
+# Get projects and issue types
+./scripts/jira-api-wrapper.sh get_projects
+./scripts/jira-api-wrapper.sh get_issue_types PROJECT_KEY
+
+# Add comment
+./scripts/jira-api-wrapper.sh add_comment PROJ-123 "This is a comment"
+
+# Transitions
+./scripts/jira-api-wrapper.sh get_transitions PROJ-123
+./scripts/jira-api-wrapper.sh transition_issue PROJ-123 TRANSITION_ID
+
+# Upload attachment
+./scripts/jira-api-wrapper.sh upload_attachment PROJ-123 /path/to/file.png
+```
+
+**jira-rest-api.sh** (Low-level - advanced use only)
+```bash
+# Only use when you need raw JSON control
+./scripts/jira-rest-api.sh jira_create_issue '{"fields":{"project":{"key":"PROJ"},"issuetype":{"name":"Task"},"summary":"Title"}}'
+./scripts/jira-rest-api.sh jira_get_issue PROJ-123
+./scripts/jira-rest-api.sh jira_update_issue PROJ-123 '{"fields":{...}}'
+```
+
+#### Diagnostic Scripts
+
 **test-jira-connection.sh**
 ```bash
 ./scripts/test-jira-connection.sh
@@ -174,17 +225,7 @@ The following scripts automate operations (located in `scripts/` directory):
 # Returns JSON with status of all dependencies
 ```
 
-**jira-api-wrapper.sh**
-```bash
-./scripts/jira-api-wrapper.sh <operation> [args...]
-# Unified interface - tries REST first, signals MCP fallback if needed
-```
-
-**jira-rest-api.sh**
-```bash
-./scripts/jira-rest-api.sh <function> [args...]
-# Direct REST API functions (can be sourced or run standalone)
-```
+#### Mermaid Diagram Scripts
 
 **jira-mermaid-upload.sh**
 ```bash

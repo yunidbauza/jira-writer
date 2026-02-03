@@ -5,7 +5,7 @@ Create and update Jira Cloud tickets with rich content, including automatic Merm
 ## Prerequisites
 
 | Dependency | Purpose | Required |
-|------------|---------|----------|
+| ---------- | ------- | -------- |
 | `JIRA_DOMAIN` | Your Jira Cloud domain | Yes |
 | `JIRA_API_KEY` | REST API auth (`email:token`) | Yes |
 | Atlassian MCP | Fallback when REST fails | No (optional) |
@@ -22,7 +22,7 @@ export JIRA_API_KEY="your-email@company.com:your-api-token"
 npm install -g @mermaid-js/mermaid-cli
 ```
 
-Get your API token at: https://id.atlassian.com/manage-profile/security/api-tokens
+Get your API token at: <https://id.atlassian.com/manage-profile/security/api-tokens>
 
 ## Verify Installation
 
@@ -46,13 +46,14 @@ Get your API token at: https://id.atlassian.com/manage-profile/security/api-toke
 ## Usage
 
 The skill activates when you:
+
 - Ask to create or update a Jira ticket
 - Provide content with Mermaid diagrams
 - Reference a markdown file for ticket content
 
 ### Examples
 
-```
+```text
 "Create a ticket for the authentication feature"
 "Update PROJ-123 with this description"
 "Add a sequence diagram showing the auth flow to PROJ-456"
@@ -60,14 +61,14 @@ The skill activates when you:
 
 ## Scripts
 
-| Script | Purpose |
-|--------|---------|
-| `test-jira-connection.sh` | Test API connectivity |
-| `check-prerequisites.sh` | Verify dependencies |
-| `jira-api-wrapper.sh` | Unified API interface |
-| `jira-rest-api.sh` | Core REST API functions |
-| `jira-mermaid-upload.sh` | Upload single diagram |
-| `jira-mermaid-batch-upload.sh` | Upload multiple diagrams |
+| Script                         | Purpose                   |
+| ------------------------------ | ------------------------- |
+| `test-jira-connection.sh`      | Test API connectivity     |
+| `check-prerequisites.sh`       | Verify dependencies       |
+| `jira-api-wrapper.sh`          | Unified API interface     |
+| `jira-rest-api.sh`             | Core REST API functions   |
+| `jira-mermaid-upload.sh`       | Upload single diagram     |
+| `jira-mermaid-batch-upload.sh` | Upload multiple diagrams  |
 
 ## License
 

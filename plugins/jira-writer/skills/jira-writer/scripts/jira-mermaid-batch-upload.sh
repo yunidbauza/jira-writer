@@ -75,8 +75,11 @@ main() {
 
         # Call single upload script
         local result
+        local json_result
         if result=$("$SCRIPT_DIR/jira-mermaid-upload.sh" "$issue_key" "$code" "$filename" 2>&2); then
-            result=$(echo "$result" | jq '. + {success: true}')
+            # Extract JSON from output (mmdc outputs noise to stdout before the JSON)
+            json_result=$(echo "$result" | awk '/^\{/,/^\}/')
+            result=$(echo "$json_result" | jq '. + {success: true}')
             success_count=$((success_count + 1))
         else
             result=$(jq -n --arg fn "$filename" --arg err "Upload failed" '{filename: $fn, success: false, error: $err}')

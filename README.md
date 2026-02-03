@@ -19,8 +19,10 @@ Then install the plugin:
 ### Manual Installation
 
 ```bash
-git clone https://github.com/yunidbauza/jira-writer.git ~/.claude/plugins/jira-writer
+git clone https://github.com/yunidbauza/jira-writer.git /tmp/jira-writer
+cp -r /tmp/jira-writer/plugins/jira-writer ~/.claude/plugins/
 chmod +x ~/.claude/plugins/jira-writer/scripts/*.sh
+rm -rf /tmp/jira-writer
 ```
 
 ## Prerequisites

@@ -28,10 +28,10 @@ Get your API token at: https://id.atlassian.com/manage-profile/security/api-toke
 
 ```bash
 # Test connection
-./scripts/test-jira-connection.sh
+./skills/jira-writer/scripts/test-jira-connection.sh
 
 # Check all prerequisites
-./scripts/check-prerequisites.sh
+./skills/jira-writer/scripts/check-prerequisites.sh
 ```
 
 ## Features

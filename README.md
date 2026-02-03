@@ -21,7 +21,7 @@ Then install the plugin:
 ```bash
 git clone https://github.com/yunidbauza/jira-writer.git /tmp/jira-writer
 cp -r /tmp/jira-writer/plugins/jira-writer ~/.claude/plugins/
-chmod +x ~/.claude/plugins/jira-writer/scripts/*.sh
+chmod +x ~/.claude/plugins/jira-writer/skills/jira-writer/scripts/*.sh
 rm -rf /tmp/jira-writer
 ```
 
@@ -58,10 +58,10 @@ npm install -g @mermaid-js/mermaid-cli
 
 ```bash
 # Test connection
-~/.claude/plugins/jira-writer/scripts/test-jira-connection.sh
+~/.claude/plugins/jira-writer/skills/jira-writer/scripts/test-jira-connection.sh
 
 # Check all prerequisites
-~/.claude/plugins/jira-writer/scripts/check-prerequisites.sh
+~/.claude/plugins/jira-writer/skills/jira-writer/scripts/check-prerequisites.sh
 ```
 
 ## Features

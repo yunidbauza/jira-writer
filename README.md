@@ -7,11 +7,13 @@ Claude Code plugin for creating and updating Jira Cloud tickets with rich conten
 ### From GitHub
 
 First, add the repository as a marketplace:
+
 ```bash
 /plugin marketplace add yunidbauza/jira-writer
 ```
 
 Then install the plugin:
+
 ```bash
 /plugin install jira-writer
 ```
@@ -28,7 +30,7 @@ rm -rf /tmp/jira-writer
 ## Prerequisites
 
 | Dependency | Purpose | Required |
-|------------|---------|----------|
+| ---------- | ------- | -------- |
 | `JIRA_DOMAIN` | Your Jira Cloud domain | Yes |
 | `JIRA_API_KEY` | REST API auth (`email:token`) | Yes |
 | Atlassian MCP | Fallback when REST fails | No (optional) |
@@ -47,7 +49,7 @@ npm install -g @mermaid-js/mermaid-cli
 
 ### Getting Your API Token
 
-1. Go to https://id.atlassian.com/manage-profile/security/api-tokens
+1. Go to <https://id.atlassian.com/manage-profile/security/api-tokens>
 2. Click "Create API token"
 3. Give it a label and copy the token
 4. Set `JIRA_API_KEY` as `your-email@company.com:your-token`
@@ -76,7 +78,7 @@ npm install -g @mermaid-js/mermaid-cli
 ### Supported Diagram Types (11)
 
 | Type | Syntax | Type | Syntax |
-|------|--------|------|--------|
+| ------ | -------- | ------ | -------- |
 | Flowchart | `graph TD` | Sequence | `sequenceDiagram` |
 | Class | `classDiagram` | State | `stateDiagram-v2` |
 | ER | `erDiagram` | Gantt | `gantt` |
@@ -94,7 +96,7 @@ The skill activates contextually when you:
 
 ### Examples
 
-```
+```text
 "Create a ticket for the authentication feature"
 "Update PROJ-123 with this description"
 "Add a sequence diagram showing the auth flow to PROJ-456"
@@ -107,7 +109,7 @@ The skill activates contextually when you:
 
 The plugin uses **REST API as the primary method** with MCP as a fallback:
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │                     Jira Writer Skill                        │
 ├─────────────────────────────────────────────────────────────┤
@@ -131,17 +133,17 @@ The plugin uses **REST API as the primary method** with MCP as a fallback:
 
 ### API Selection by Content Type
 
-| Content | API Used | Fallback |
-|---------|----------|----------|
-| Text, lists, code | REST (primary) | MCP |
-| Checkboxes (`- [ ]`) | REST only | None |
-| Mermaid diagrams | REST only | None |
-| Attachments | REST only | None |
+| Content              | API Used        | Fallback |
+| -------------------- | --------------- | -------- |
+| Text, lists, code    | REST (primary)  | MCP      |
+| Checkboxes (`- [ ]`) | REST only       | None     |
+| Mermaid diagrams     | REST only       | None     |
+| Attachments          | REST only       | None     |
 
 ## Scripts
 
 | Script | Purpose |
-|--------|---------|
+| ------ | ------- |
 | `test-jira-connection.sh` | Test API connectivity and auth |
 | `check-prerequisites.sh` | Verify all dependencies |
 | `jira-api-wrapper.sh` | Unified interface (REST + MCP fallback) |
@@ -175,15 +177,18 @@ The plugin uses **REST API as the primary method** with MCP as a fallback:
 
 ### REST API Connection Issues
 
-**401 Unauthorized**
-- Verify `JIRA_API_KEY` format is `email:token` (not base64 encoded)
-- Regenerate API token at https://id.atlassian.com/manage-profile/security/api-tokens
+#### 401 Unauthorized
 
-**404 Not Found**
+- Verify `JIRA_API_KEY` format is `email:token` (not base64 encoded)
+- Regenerate API token at <https://id.atlassian.com/manage-profile/security/api-tokens>
+
+#### 404 Not Found
+
 - Check `JIRA_DOMAIN` is correct (e.g., `company.atlassian.net`)
 - Verify the issue key exists and you have access
 
-**Connection Failed**
+#### Connection Failed
+
 - Check network connectivity
 - Verify domain is reachable: `curl -I https://your-domain.atlassian.net`
 

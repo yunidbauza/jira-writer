@@ -1,19 +1,16 @@
 {
-  "name": "jira-writer-marketplace",
+  "name": "yunid-claude-plugins",
   "owner": {
-    "name": "Yunid Bauza"
+    "name": "Yunid Bauza",
+    "url": "https://github.com/yunidbauza"
   },
-  "description": "Marketplace for Jira Writer plugin",
+  "description": "Claude Code plugins by Yunid Bauza",
   "plugins": [
     {
       "name": "jira-writer",
       "description": "Create and update Jira Cloud tickets with rich content, including automatic Mermaid diagram embedding",
       "version": "1.0.0",
-      "source": {
-        "source": "github",
-        "repo": "yunidbauza/jira-writer",
-        "ref": "main"
-      }
+      "source": "./plugins/jira-writer"
     }
   ]
 }

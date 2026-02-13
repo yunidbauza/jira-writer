@@ -1,8 +1,8 @@
 {
-  "name": "yunid-claude-plugins",
+  "name": "claude-kit",
   "owner": {
     "name": "Yunid Bauza",
-    "url": "https://github.com/yunidbauza"
+    "url": "https://github.com/yunidbauza/claude-kit"
   },
   "description": "Claude Code plugins by Yunid Bauza",
   "plugins": [
